@@ -9,10 +9,21 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@babel/standalone": "^7.17.9",
     "@goodrx/matisse-react": "^43.18.1",
+    "acorn": "^8.7.0",
+    "escodegen": "^2.0.0",
+    "html-react-parser": "^1.4.12",
+    "html-to-react": "^1.4.8",
+    "monaco-editor": "^0.33.0",
     "next": "12.1.4",
+    "object-path": "^0.11.8",
+    "prismjs": "1.20.0",
     "react": "18.0.0",
-    "react-dom": "18.0.0",
+    "react-dom": "^18.0.0",
+    "react-html-parser": "^2.0.2",
+    "react-monaco-editor": "^0.47.0",
+    "react-simple-code-editor": "^0.11.0",
     "styled-components": "^5.3.5",
     "styled-system": "^5.1.5"
   },

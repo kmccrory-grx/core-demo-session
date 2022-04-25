@@ -4,6 +4,7 @@ import {
   Button,
   Dropdown,
   Icon,
+  Image,
   Input,
   Field,
   Fieldset,
@@ -15,13 +16,40 @@ import {
   List,
   ThemeProvider,
 } from '@goodrx/matisse-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import Editor from 'react-simple-code-editor';
+import { highlight, languages } from 'prismjs/components/prism-core';
+import DemoText from './demoCodeBlock.js';
+import DemoCodeBlock from './demoCodeBlock.jsx';
+import 'prismjs/components/prism-clike';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/themes/prism.css'; //Example style, you can use another
+import { Parser } from 'html-to-react';
+import ReactHtmlParser from 'react-html-parser';
+import ReactDOMServer from 'react-dom/server';
 
 export default function Home() {
   const [shows, setShows] = useState([]);
+  const [Code, setCode] = useState(DemoText);
   const [dataIndex, setDataIndex] = useState(-1);
   const [inputValue, setInputValue] = useState('');
+  const codeRef = useRef(null);
+
+  // useEffect(() => {
+  //   let HTML = ReactDOMServer.renderToString(<Code />);
+  //   codeRef.current.innerHTML = HTML;
+  //   // console.log(HTML, 'asfasf', codeRef.innerHTML);
+  // }, []);
+
+  // useEffect(() => {
+  //   let HTML = ReactDOMServer.renderToString(<Code />);
+  //   codeRef.current.innerHTML = HTML;
+  //   // console.log(HTML, 'asfasf', codeRef.innerHTML);
+  // }, [Code]);
+
+  // const Component2 = Parser.parse(DemoText);
+  // console.log(ReactHtmlParser(DemoText), 'component 2');
 
   const onSubmit = (e) => {
     e.preventDefault();
@@ -33,6 +61,10 @@ export default function Home() {
       })
       .catch((err) => console.log(err));
   };
+
+  // const updateCode = (code) => {
+  //   setCode(() => Code);
+  // };
 
   const getDataBlock = () => {
     // if (dataIndex < 0) return <></>;
@@ -55,7 +87,11 @@ export default function Home() {
             backgroundColor="blue"
           >
             {shows.length > 0 && shows?.[dataIndex]?.show?.image?.medium && (
-              <img src={`${shows[dataIndex].show.image.medium}`} />
+              <Image
+                objectFit="fill"
+                margin="0 auto"
+                src={`${shows[dataIndex].show.image.medium}`}
+              />
             )}
           </Flex>
           <Flex
@@ -103,61 +139,33 @@ export default function Home() {
     <ThemeProvider theme="matisse">
       <Flex
         border="1px solid grey"
-        flexDirection="column"
+        flexDirection="row"
         role="Container"
-        width="75%"
+        width="100%"
         height="100vh"
         margin="auto"
         minWidth="1000px"
       >
-        <Flex
-          backgroundColor="blue"
-          flexDirection="row"
-          role="select"
-          width="100%"
-          height="100px"
-        >
-          <Form onSubmit={(e) => onSubmit(e)}>
-            <Input
-              onChange={(e, valueOverride) =>
-                setInputValue(valueOverride.value)
-              }
-              id="example-input"
-              label="Example"
-            />
-            <Button type="submit">Search</Button>
-          </Form>
-        </Flex>
-        <Flex
-          backgroundColor="blue"
-          flexDirection="row"
-          role="content"
-          width="100%"
-          height="100%"
-          overflow="scroll"
-        >
-          <Flex
-            backgroundColor="green"
-            flexDirection="column"
-            role="list"
-            width="25%"
-            overflow="scroll"
-          >
-            <List
-              title="movie list"
-              subTitle="select a movie"
-              blocks={formatShows()}
-            ></List>
-          </Flex>
-          <Flex
+        <Flex role="codeEditor" backgroundColor="indigo" width="35%">
+          <Editor
+            value={Code}
+            width="100%"
             height="100%"
-            flexGrow={1}
-            backgroundColor="grey"
-            flexDirection="column"
-            role="data"
-          >
-            {getDataBlock()}
-          </Flex>
+            onValueChange={(Code) => setCode(Code)}
+            highlight={(Code) => Code && highlight(Code, languages.js)}
+            padding={10}
+            style={{
+              fontFamily: '"Fira code", "Fira Mono", monospace',
+              fontSize: 12,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'grey',
+            }}
+          />
+        </Flex>
+        <Flex ref={codeRef} width="65%" role="rendercode">
+          {/* {ReactHtmlParser(Code)} */}
+          <DemoCodeBlock />
         </Flex>
       </Flex>
     </ThemeProvider>
