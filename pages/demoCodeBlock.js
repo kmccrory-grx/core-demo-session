@@ -28,9 +28,7 @@ export default `
     <>
       {/*Matisse components NEED to be rendered inside of the <ThemeProvider /> */}
       <ThemeProvider theme="matisse">
-        <div style={{ width: '100vw', height: '100vh', backgroundColor: 'black' }}>
-          <Button margin={100} onClick={helloWorld} type="button">clickd</Button>
-        </div>
+        <Button margin={100} onClick={helloWorld} type="button">clickd</Button>
       </ThemeProvider>
     </>
   )

@@ -13,6 +13,7 @@ import {
   Form,
   Container,
   Text,
+  TextPairing,
   List,
   ThemeProvider,
 } from '@goodrx/matisse-react';
@@ -41,31 +42,85 @@ export default function Home() {
   }, [editorCode]);
 
   return (
-    <Flex
-      border="1px solid grey"
-      flexDirection="row"
-      role="Container"
-      width="100%"
-      height="100vh"
-      margin="auto"
-      minWidth="1000px"
-    >
-      <Flex role="codeEditor" flex backgroundColor="#222" width="40%">
-        <LiveProvider scope={scopeComponents} code={DemoText}>
-          <LiveEditor style={{ width: '100%' }} />
-          {showDisplay &&
-            ReactDOM.createPortal(<LiveError />, codeDisplayRef.current)}
-          {showDisplay &&
-            ReactDOM.createPortal(<LivePreview />, codeDisplayRef.current)}
-        </LiveProvider>
+    <>
+      <style jsx global>
+        {`
+          /* Other global styles such as 'html, body' etc... */
+
+          #__next,
+          html,
+          body {
+            height: 100%;
+          }
+
+          #containerFullScreen {
+            height: calc(100% - 100px);
+          }
+        `}
+      </style>
+      <Flex role="container" height="100%" flexDirection="column">
+        <ThemeProvider theme="matisse">
+          <Flex
+            role="banner"
+            width="100%"
+            height="100px"
+            backgroundColor="white"
+          >
+            <Flex role="title">
+              <TextPairing variant="header-xl+body-reg">
+                {{
+                  super: 'GoodRx component playground',
+                  sub: 'And here is some body text',
+                }}
+              </TextPairing>
+            </Flex>
+          </Flex>
+        </ThemeProvider>
+        <Flex
+          id="containerFullScreen"
+          border="1px solid grey"
+          flexDirection="row"
+          role="Container"
+          width="100%"
+          height="100%"
+          margin="auto"
+          minWidth="1000px"
+        >
+          <Flex
+            role="codeEditor"
+            overflow="scroll"
+            backgroundColor="#222"
+            width="40%"
+          >
+            <Box id="editorWrapper" overflowY="scroll">
+              <LiveProvider scope={scopeComponents} code={DemoText}>
+                <LiveEditor style={{ width: '100%' }} />
+                {showDisplay &&
+                  ReactDOM.createPortal(<LiveError />, codeDisplayRef.current)}
+                {showDisplay &&
+                  ReactDOM.createPortal(
+                    <LivePreview style={{ height: '100%' }} />,
+                    codeDisplayRef.current
+                  )}
+              </LiveProvider>
+            </Box>
+          </Flex>
+          <Flex
+            backgroundColor="#aaa"
+            flexGrow={1}
+            width="50%"
+            role="codeDisplay"
+          >
+            <Box
+              overflow="scroll"
+              width="100%"
+              height="100%"
+              id="_codeDisplay"
+              ref={codeDisplayRef}
+            />
+          </Flex>
+        </Flex>
       </Flex>
-      <Flex
-        backgroundColor="#ccc"
-        flexGrow={1}
-        width="50%"
-        role="codeDisplay"
-        ref={codeDisplayRef}
-      ></Flex>
-    </Flex>
+    </>
   );
 }
