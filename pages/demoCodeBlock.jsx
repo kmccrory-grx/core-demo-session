@@ -127,7 +127,7 @@
                   <Input
                     ref={inputRef}
                     id="example"
-                    label="Input with Form"
+                    label="Type a TV show"
                     name="value"
                   />
                   <Button mt={2} type="submit">
@@ -143,8 +143,8 @@
                 overflow="scroll"
               >
                 <List
-                  title="movie list"
-                  subTitle="select a movie"
+                  title="Tv show list"
+                  subTitle="select a Tv show"
                   spacing="dense"
                   blocks={formatShows()}
                 ></List>

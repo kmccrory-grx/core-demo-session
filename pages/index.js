@@ -2,6 +2,8 @@ import {
   Box,
   Badge,
   Button,
+  Drawer,
+  DrawerBody,
   Dropdown,
   Icon,
   Image,
@@ -23,6 +25,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import DemoText from './demoCodeBlock.js';
 import ReactDOM from 'react-dom';
+import componentData from './componentData';
+import prettier from 'prettier/standalone';
+import parserBabel from 'prettier/esm/parser-babel.mjs';
 
 const scopeComponents = {
   ...allMat,
@@ -34,13 +39,76 @@ const scopeComponents = {
 
 export default function Home() {
   const [showDisplay, setShowDisplay] = useState(false);
-  const [editorCode, setEditorCode] = useState(DemoText);
+  const [openComponentList, setOpenComponentList] = useState(false);
+  const [editorCode, setEditorCode] = useState(prettier.format(DemoText,
+              {
+                parser: 'babel',
+                plugins: [parserBabel]
+              }
+            ));
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const [editorKey, setEditorKey] = useState(0);
   const codeDisplayRef = useRef(null);
+  const componentListRef = useRef(null);
+  const codeEditorRef = useRef(null);
+  const codeTextAreaRef = useRef(null);
+
+  let formattedCodeListData = Object.keys(componentData).map((key) => {
+    return {
+      title: (
+        <Button
+          onClick={(e) => {
+            e.preventDefault();
+
+            const textArea = document
+              .getElementById('codeEditor')
+              .getElementsByTagName('textarea')[0];
+
+            textArea.setSelectionRange(cursorPosition, cursorPosition);
+
+            const code = textArea.value.slice(0, cursorPosition) +
+                  `${componentData[key].snippet}` +
+                  textArea.value.slice(cursorPosition)
+              ;
+
+            setEditorCode(() => 
+              prettier.format(code,
+              {
+                parser: 'babel',
+                plugins: [parserBabel]
+              }
+            ));
+
+            setEditorKey(Math.random(5) * 100);
+          }}
+          type="button"
+          size='sm'
+          variant='standalone'
+        >
+          {key}
+        </Button>
+      ),
+    };
+  });
 
   useEffect(() => {
     if (codeDisplayRef.current) setShowDisplay(true);
   }, [editorCode]);
 
+  const getComponentList = () => {
+    return (
+      <>
+        <List blocks={formattedCodeListData} variant="none" />
+      </>
+    );
+  };
+
+  const handleCursorPosition = () => {
+    setCursorPosition(
+      document.getElementById('codeEditor').getElementsByTagName('textarea')[0]
+        .selectionStart
+    );
+  };
   return (
     <>
       <style jsx global>
@@ -75,6 +143,23 @@ export default function Home() {
               </TextPairing>
             </Flex>
           </Flex>
+          {openComponentList &&
+            componentListRef.current &&
+            ReactDOM.createPortal(getComponentList(), componentListRef.current)}
+          {codeEditorRef.current &&
+            ReactDOM.createPortal(
+              <Button
+                onClick={() => {
+                  setOpenComponentList(!openComponentList);
+                }}
+                size="sm"
+                variant="minimal"
+                style={{ position: 'absolute', right: 0, top: 0 }}
+              >
+                Component List
+              </Button>,
+              codeEditorRef.current
+            )}
         </ThemeProvider>
         <Flex
           id="containerFullScreen"
@@ -87,14 +172,32 @@ export default function Home() {
           minWidth="1000px"
         >
           <Flex
+            ref={componentListRef}
+            role="componentList"
+            overflow="scroll"
+            backgroundColor="#fff"
+            width={openComponentList ? '6%' : 0}
+          />
+          <Flex
             role="codeEditor"
             overflow="scroll"
             backgroundColor="#222"
             width="40%"
+            position="relative"
+            ref={codeEditorRef}
           >
             <Box id="editorWrapper" overflowY="scroll">
-              <LiveProvider scope={scopeComponents} code={DemoText}>
-                <LiveEditor style={{ width: '100%' }} />
+              <LiveProvider
+                key={editorKey}
+                scope={scopeComponents}
+                code={editorCode}
+              >
+                <LiveEditor
+                  ref={codeTextAreaRef}
+                  id="codeEditor"
+                  onBlur={() => handleCursorPosition()}
+                  style={{ width: '100%' }}
+                />
                 {showDisplay &&
                   ReactDOM.createPortal(<LiveError />, codeDisplayRef.current)}
                 {showDisplay &&
