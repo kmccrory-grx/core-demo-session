@@ -20,8 +20,9 @@ import {
   ThemeProvider,
 } from '@goodrx/matisse-react';
 import * as allMat from '@goodrx/matisse-react';
+import * as allEinstein from '@goodrx/einstein';
 import { LiveProvider, LiveEditor, LiveError, LivePreview } from 'react-live';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, createRef } from 'react';
 import axios from 'axios';
 import DemoText from './demoCodeBlock.js';
 import ReactDOM from 'react-dom';
@@ -31,9 +32,11 @@ import parserBabel from 'prettier/esm/parser-babel.mjs';
 
 const scopeComponents = {
   ...allMat,
+  ...allEinstein,
   useState,
   useEffect,
   useRef,
+  createRef,
   axios,
 };
 
@@ -51,7 +54,38 @@ export default function Home() {
   const codeDisplayRef = useRef(null);
   const componentListRef = useRef(null);
   const codeEditorRef = useRef(null);
-  const codeTextAreaRef = useRef(null);
+  
+  const pastDefinitions = key => {
+    if(!componentData[key].definitions) return;
+
+
+  }
+
+  const paseSnippet = key => {
+    const textArea = document
+      .getElementById('codeEditor')
+      .getElementsByTagName('textarea')[0];
+
+    textArea.setSelectionRange(cursorPosition, cursorPosition);
+
+    let code = textArea.value.slice(0, cursorPosition) +
+      `${componentData[key].snippet}` +
+      textArea.value.slice(cursorPosition);
+
+    if(componentData[key].hooks) {
+      code = code.slice(0, 7) +
+        `\n${componentData[key].hooks}` +
+        code.slice(7);
+    };
+
+    if(componentData[key].definitions) {
+      code = code.slice(0, 7) +
+        `\n${componentData[key].definitions}` +
+        code.slice(7);
+    };
+
+    pasteFormattedCode(code);
+  }
 
   let formattedCodeListData = Object.keys(componentData).map((key) => {
     return {
@@ -59,27 +93,7 @@ export default function Home() {
         <Button
           onClick={(e) => {
             e.preventDefault();
-
-            const textArea = document
-              .getElementById('codeEditor')
-              .getElementsByTagName('textarea')[0];
-
-            textArea.setSelectionRange(cursorPosition, cursorPosition);
-
-            const code = textArea.value.slice(0, cursorPosition) +
-                  `${componentData[key].snippet}` +
-                  textArea.value.slice(cursorPosition)
-              ;
-
-            setEditorCode(() => 
-              prettier.format(code,
-              {
-                parser: 'babel',
-                plugins: [parserBabel]
-              }
-            ));
-
-            setEditorKey(Math.random(5) * 100);
+            paseSnippet(key);
           }}
           type="button"
           size='sm'
@@ -95,6 +109,18 @@ export default function Home() {
     if (codeDisplayRef.current) setShowDisplay(true);
   }, [editorCode]);
 
+  const pasteFormattedCode = code => {
+    setEditorCode(() => 
+      prettier.format(code,
+      {
+        parser: 'babel',
+        plugins: [parserBabel]
+      }
+    ));
+
+    setEditorKey(Math.random(5) * 100);
+  }
+
   const getComponentList = () => {
     return (
       <>
@@ -109,6 +135,16 @@ export default function Home() {
         .selectionStart
     );
   };
+
+  const editorBlur = () => {
+    handleCursorPosition();
+    
+    const textArea = document
+      .getElementById('codeEditor')
+      .getElementsByTagName('textarea')[0];
+
+    pasteFormattedCode(textArea.value);
+  }
   return (
     <>
       <style jsx global>
@@ -193,9 +229,8 @@ export default function Home() {
                 code={editorCode}
               >
                 <LiveEditor
-                  ref={codeTextAreaRef}
                   id="codeEditor"
-                  onBlur={() => handleCursorPosition()}
+                  onBlur={() => editorBlur()}
                   style={{ width: '100%' }}
                 />
                 {showDisplay &&
