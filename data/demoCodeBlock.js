@@ -1,4 +1,4 @@
-export default `() => {
+const demoCodeBlock = `() => {
   const helloWorld = () => alert('hello world');
   return (
     <>
@@ -10,3 +10,5 @@ export default `() => {
   )
 }
 `;
+
+export default demoCodeBlock;

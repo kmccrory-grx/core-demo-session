@@ -1,4 +1,4 @@
-export default {
+const componentData = {
   "Alert": {
     "snippet": `<Alert
       variant='primary'>
@@ -258,3 +258,4 @@ export default {
     }
   }
 
+export default componentData;

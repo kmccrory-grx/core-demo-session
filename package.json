@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@babel/core": "^7.18.0",
+    "@babel/preset-typescript": "^7.17.12",
     "@babel/standalone": "^7.17.9",
     "@goodrx/einstein": "^5.3.0",
     "@goodrx/gizmo": "^3.38.0",
@@ -19,6 +21,8 @@
     "@stripe/react-stripe-js": "^1.7.2",
     "acorn": "^8.7.0",
     "escodegen": "^2.0.0",
+    "formik": "^2.2.9",
+    "fs": "^0.0.1-security",
     "html-react-parser": "^1.4.12",
     "html-to-react": "^1.4.8",
     "htmlparser2": "^8.0.0",
@@ -36,9 +40,11 @@
     "react-live": "^2.4.1",
     "react-monaco-editor": "^0.47.0",
     "react-simple-code-editor": "^0.11.0",
+    "react-view": "^2.3.7",
     "require-cjs-string": "^1.0.0",
     "styled-components": "^5.3.5",
-    "styled-system": "^5.1.5"
+    "styled-system": "^5.1.5",
+    "yup": "^0.32.11"
   },
   "devDependencies": {
     "axios": "^0.26.1",

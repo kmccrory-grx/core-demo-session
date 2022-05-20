@@ -21,18 +21,15 @@ import {
 } from '@goodrx/matisse-react';
 import * as allMat from '@goodrx/matisse-react';
 import * as allEinstein from '@goodrx/einstein';
-
+import { LiveProvider, LiveEditor, LiveError, LivePreview } from 'react-live';
 import React, { useState, useEffect, useRef, createRef } from 'react';
-import ReactDOM from 'react-dom';
 import * as yup from 'yup';
 import axios from 'axios';
-import DemoText from '../data/demoCodeBlock.js';
-import {useView, Compiler, Editor, Error, formatCode, ActionButtons } from 'react-view';
-import presetTypescript from '@babel/preset-typescript';
-
-import componentData from '../data/componentData';
-// import prettier from 'prettier/standalone';
-// import parserBabel from 'prettier/esm/parser-babel.mjs';
+import DemoText from './demoCodeBlock.js';
+import ReactDOM from 'react-dom';
+import componentData from './componentData';
+import prettier from 'prettier/standalone';
+import parserBabel from 'prettier/esm/parser-babel.mjs';
 import { useFormikContext } from 'formik';
 
 const scopeComponents = {
@@ -47,34 +44,52 @@ const scopeComponents = {
   yup
 };
 
-const Home = () => {
-  // const [showDisplay, setShowDisplay] = useState(false);
+export default function Home() {
+  const [showDisplay, setShowDisplay] = useState(false);
   const [openComponentList, setOpenComponentList] = useState(false);
-  const [editorCode, setEditorCode] = useState(DemoText);
-  // const [cursorPosition, setCursorPosition] = useState(0);
-  // const [editorKey, setEditorKey] = useState(0);
+  const [editorCode, setEditorCode] = useState(prettier.format(DemoText,
+              {
+                parser: 'babel',
+                plugins: [parserBabel]
+              }
+            ));
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const [editorKey, setEditorKey] = useState(0);
   const codeDisplayRef = useRef(null);
   const componentListRef = useRef(null);
   const codeEditorRef = useRef(null);
-  const codeEditorButtons = useRef(null);
+  
+  const pastDefinitions = key => {
+    if(!componentData[key].definitions) return;
 
-  const params = useView({
-    initialCode: editorCode,
-    scope: {...scopeComponents},
-    imports: {
-      'baseui/button': {
-        named: ['Button'],
-      }},
-    onUpdate: console.log,
-    
-  });
-const getComponentList = () => {
-    return (
-      <>
-        <List blocks={formattedCodeListData} variant="none" />
-      </>
-    );
-  };
+
+  }
+
+  const paseSnippet = key => {
+    const textArea = document
+      .getElementById('codeEditor')
+      .getElementsByTagName('textarea')[0];
+
+    textArea.setSelectionRange(cursorPosition, cursorPosition);
+
+    let code = textArea.value.slice(0, cursorPosition) +
+      `${componentData[key].snippet}` +
+      textArea.value.slice(cursorPosition);
+
+    if(componentData[key].hooks) {
+      code = code.slice(0, 7) +
+        `\n${componentData[key].hooks}` +
+        code.slice(7);
+    };
+
+    if(componentData[key].definitions) {
+      code = code.slice(0, 7) +
+        `\n${componentData[key].definitions}` +
+        code.slice(7);
+    };
+
+    pasteFormattedCode(code);
+  }
 
   let formattedCodeListData = Object.keys(componentData).map((key) => {
     return {
@@ -82,7 +97,7 @@ const getComponentList = () => {
         <Button
           onClick={(e) => {
             e.preventDefault();
-            // paseSnippet(key);
+            paseSnippet(key);
           }}
           type="button"
           size='sm'
@@ -94,6 +109,46 @@ const getComponentList = () => {
     };
   });
 
+  useEffect(() => {
+    if (codeDisplayRef.current) setShowDisplay(true);
+  }, [editorCode]);
+
+  const pasteFormattedCode = code => {
+    setEditorCode(() => 
+      prettier.format(code,
+      {
+        parser: 'babel',
+        plugins: [parserBabel]
+      }
+    ));
+
+    setEditorKey(Math.random(5) * 100);
+  }
+
+  const getComponentList = () => {
+    return (
+      <>
+        <List blocks={formattedCodeListData} variant="none" />
+      </>
+    );
+  };
+
+  const handleCursorPosition = () => {
+    setCursorPosition(
+      document.getElementById('codeEditor').getElementsByTagName('textarea')[0]
+        .selectionStart
+    );
+  };
+
+  const editorBlur = () => {
+    handleCursorPosition();
+    
+    const textArea = document
+      .getElementById('codeEditor')
+      .getElementsByTagName('textarea')[0];
+
+    pasteFormattedCode(textArea.value);
+  }
   return (
     <>
       <style jsx global>
@@ -107,27 +162,7 @@ const getComponentList = () => {
           }
 
           #containerFullScreen {
-            // height: calc(100% - 100px);
-            overflow: hidden;
-          }
-          
-          #editorWrapper {
-            display: flex;
-          }
-          
-          #editorWrapper textarea, #editorWrapper pre {
-            flex-direction: column;
-            flex-grow: 1;
-          }
-          
-          .editor_internal {
-            display: flex;
-            min-height: 100%
-          }
-
-          .editor_internal div:first-of-type {
-            display: flex;
-            width: 100%;
+            height: calc(100% - 100px);
           }
         `}
       </style>
@@ -151,7 +186,7 @@ const getComponentList = () => {
           {openComponentList &&
             componentListRef.current &&
             ReactDOM.createPortal(getComponentList(), componentListRef.current)}
-          {codeEditorButtons.current &&
+          {codeEditorRef.current &&
             ReactDOM.createPortal(
               <Button
                 onClick={() => {
@@ -159,10 +194,11 @@ const getComponentList = () => {
                 }}
                 size="sm"
                 variant="minimal"
+                style={{ position: 'absolute', right: 0, top: 0 }}
               >
                 Component List
               </Button>,
-              codeEditorButtons.current
+              codeEditorRef.current
             )}
         </ThemeProvider>
         <Flex
@@ -184,17 +220,32 @@ const getComponentList = () => {
           />
           <Flex
             role="codeEditor"
+            overflow="scroll"
             backgroundColor="#222"
             width="40%"
-            flexDirection='column'
             position="relative"
             ref={codeEditorRef}
           >
-            <Flex id="editorWrapper" flexGrow={1} overflowY="scroll">
-              <Box minWidth='100%'>
-                <Editor className='editor_internal' {...params.editorProps} language="jsx" />
-              </Box>
-            </Flex>
+            <Box id="editorWrapper" overflowY="scroll">
+              <LiveProvider
+                key={editorKey}
+                scope={scopeComponents}
+                code={editorCode}
+              >
+                <LiveEditor
+                  id="codeEditor"
+                  onBlur={() => editorBlur()}
+                  style={{ width: '100%' }}
+                />
+                {showDisplay &&
+                  ReactDOM.createPortal(<LiveError />, codeDisplayRef.current)}
+                {showDisplay &&
+                  ReactDOM.createPortal(
+                    <LivePreview style={{ height: '100%' }} />,
+                    codeDisplayRef.current
+                  )}
+              </LiveProvider>
+            </Box>
           </Flex>
           <Flex
             backgroundColor="#aaa"
@@ -208,20 +259,10 @@ const getComponentList = () => {
               height="100%"
               id="_codeDisplay"
               ref={codeDisplayRef}
-            >
-              <Compiler {...params.compilerProps} presets={[presetTypescript]} />
-              <Error {...params.errorProps} />
-            </Box>
+            />
           </Flex>
-        </Flex>
-        <Flex ref={codeEditorButtons} minHeight={0} id="editorWrapper_buttons" width='100%'>
-          <ActionButtons {...params.actions} />
         </Flex>
       </Flex>
     </>
   );
-};
-
-Home.displayName = 'Home';
-
-export default Home;
+}
