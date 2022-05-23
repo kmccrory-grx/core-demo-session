@@ -1,3 +1,6 @@
+import React, { useState, useEffect, useRef, createRef } from 'react';
+import ReactDOM from 'react-dom';
+
 import {
   Box,
   Badge,
@@ -19,25 +22,26 @@ import {
   List,
   ThemeProvider,
 } from '@goodrx/matisse-react';
-import * as allMat from '@goodrx/matisse-react';
-import * as allEinstein from '@goodrx/einstein';
+import * as allMattisseComponents from '@goodrx/matisse-react';
+import * as allEinsteinComponents from '@goodrx/einstein';
+import ComponentList from './components/ComponentList.tsx';
 
-import React, { useState, useEffect, useRef, createRef } from 'react';
-import ReactDOM from 'react-dom';
+// helper imports
 import * as yup from 'yup';
 import axios from 'axios';
+
+// demo/initial cold text
 import DemoText from '../data/demoCodeBlock.js';
-import {useView, Compiler, Editor, Error, formatCode, ActionButtons } from 'react-view';
+
+import { useView, Compiler, Editor, Error, formatCode, ActionButtons } from 'react-view';
 import presetTypescript from '@babel/preset-typescript';
 
 import componentData from '../data/componentData';
-// import prettier from 'prettier/standalone';
-// import parserBabel from 'prettier/esm/parser-babel.mjs';
 import { useFormikContext } from 'formik';
 
 const scopeComponents = {
-  ...allMat,
-  ...allEinstein,
+  ...allMattisseComponents,
+  ...allEinsteinComponents,
   useState,
   useEffect,
   useRef,
@@ -50,121 +54,173 @@ const scopeComponents = {
 const Home = () => {
   // const [showDisplay, setShowDisplay] = useState(false);
   const [openComponentList, setOpenComponentList] = useState(false);
-  const [editorCode, setEditorCode] = useState(DemoText);
-  // const [cursorPosition, setCursorPosition] = useState(0);
-  // const [editorKey, setEditorKey] = useState(0);
+  const [editorCode, setEditorCode] = useState(formatCode(DemoText));
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const [editorKey, setEditorKey] = useState(0);
   const codeDisplayRef = useRef(null);
   const componentListRef = useRef(null);
   const codeEditorRef = useRef(null);
   const codeEditorButtons = useRef(null);
 
-  const params = useView({
+  const paramsInitial = useView({
     initialCode: editorCode,
-    scope: {...scopeComponents},
+    scope: { ...scopeComponents },
     imports: {
       'baseui/button': {
         named: ['Button'],
-      }},
-    onUpdate: console.log,
-    
+      }
+    }
   });
-const getComponentList = () => {
-    return (
-      <>
-        <List blocks={formattedCodeListData} variant="none" />
-      </>
+
+  const params = {
+    ...paramsInitial,
+    actions: {
+      ...paramsInitial.actions,
+      formatCode: () => setEditorCode(formatCode(editorCode)),
+      reset: () => setEditorCode(formatCode(DemoText))
+    },
+    editorProps: {
+      ...paramsInitial.editorProps,
+      onChange: code => setEditorCode(code),
+      code: editorCode,
+      className: 'editor_internal'
+    },
+    compilerProps: {
+      ...paramsInitial.compilerProps,
+      className: 'compiler_internal',
+      code: editorCode
+    }
+  };
+
+  const handleCursorPosition = () => {
+    setCursorPosition(
+      document.getElementById('editorWrapper').getElementsByTagName('textarea')[0]
+        .selectionStart
     );
   };
 
-  let formattedCodeListData = Object.keys(componentData).map((key) => {
-    return {
-      title: (
+  const editorBlur = () => {
+    handleCursorPosition();
+
+    setEditorCode(formatCode(editorCode));
+  };
+
+  const getComponentList = () => {
+    return (
+      openComponentList &&
+      componentListRef.current &&
+      ReactDOM.createPortal(
+        <ComponentList {
+          ...{
+            cursorPosition,
+            setEditorCode,
+            setEditorKey,
+            formatCode,
+          }
+        } />, componentListRef.current)
+    )
+  };
+
+  const getEditorButtons = () => {
+    return (
+      codeEditorButtons.current &&
+      ReactDOM.createPortal(
         <Button
-          onClick={(e) => {
-            e.preventDefault();
-            // paseSnippet(key);
+          onClick={() => {
+            setOpenComponentList(!openComponentList);
           }}
-          type="button"
-          size='sm'
-          variant='standalone'
+          size="sm"
+          variant="minimal"
         >
-          {key}
-        </Button>
-      ),
-    };
-  });
+          Component List
+        </Button>,
+        codeEditorButtons.current
+      )
+    )
+  };
+
+  const getCompiledCode = () => {
+    return (
+      <Flex
+        backgroundColor="#aaa"
+        flexGrow={1}
+        flexDirection='column'
+        width="55%"
+        role="codeDisplay"
+      >
+        <Flex
+          overflow="scroll"
+          width="100%"
+          height="100%"
+          id="_codeDisplay"
+          ref={codeDisplayRef}
+        >
+          <Compiler {...params.compilerProps} presets={[presetTypescript]} />
+          <Error {...params.errorProps} isPopup={true} />
+        </Flex>
+      </Flex>
+    )
+  };
+
+  const getThemeAndHeader = () => {
+    return (
+      <ThemeProvider theme="matisse">
+        <Flex
+          role="banner"
+          width="100%"
+          height="100px"
+          backgroundColor="white"
+        >
+          <Flex role="title">
+            <TextPairing variant="header-xl+body-reg">
+              {{
+                super: 'GoodRx component playground',
+                sub: 'And here is some body text',
+              }}
+            </TextPairing>
+          </Flex>
+        </Flex>
+        {getComponentList()}
+        {getEditorButtons()}
+      </ThemeProvider>
+    )
+  };
+
+  const getCodeEditor = () => {
+    return (
+      <Flex
+        role="codeEditor"
+        backgroundColor="#222"
+        width="35%"
+        flexDirection='column'
+        position="relative"
+        ref={codeEditorRef}
+      >
+        <Flex id="editorWrapper" flexGrow={1} overflowY="scroll">
+          <Box onBlur={() => editorBlur()} minWidth='100%'>
+            <Editor {...params.editorProps} key={editorKey} language="tsx" />
+          </Box>
+        </Flex>
+      </Flex>
+    )
+  };
+
+  const getComponentListWrapper = () => {
+    return (
+      <Flex
+        ref={componentListRef}
+        role="componentList"
+        overflow="scroll"
+        backgroundColor="#fff"
+        width={openComponentList ? '6%' : 0}
+      />
+    )
+  };
 
   return (
     <>
-      <style jsx global>
-        {`
-          /* Other global styles such as 'html, body' etc... */
-
-          #__next,
-          html,
-          body {
-            height: 100%;
-          }
-
-          #containerFullScreen {
-            // height: calc(100% - 100px);
-            overflow: hidden;
-          }
-          
-          #editorWrapper {
-            display: flex;
-          }
-          
-          #editorWrapper textarea, #editorWrapper pre {
-            flex-direction: column;
-            flex-grow: 1;
-          }
-          
-          .editor_internal {
-            display: flex;
-            min-height: 100%
-          }
-
-          .editor_internal div:first-of-type {
-            display: flex;
-            width: 100%;
-          }
-        `}
-      </style>
       <Flex role="container" height="100%" flexDirection="column">
-        <ThemeProvider theme="matisse">
-          <Flex
-            role="banner"
-            width="100%"
-            height="100px"
-            backgroundColor="white"
-          >
-            <Flex role="title">
-              <TextPairing variant="header-xl+body-reg">
-                {{
-                  super: 'GoodRx component playground',
-                  sub: 'And here is some body text',
-                }}
-              </TextPairing>
-            </Flex>
-          </Flex>
-          {openComponentList &&
-            componentListRef.current &&
-            ReactDOM.createPortal(getComponentList(), componentListRef.current)}
-          {codeEditorButtons.current &&
-            ReactDOM.createPortal(
-              <Button
-                onClick={() => {
-                  setOpenComponentList(!openComponentList);
-                }}
-                size="sm"
-                variant="minimal"
-              >
-                Component List
-              </Button>,
-              codeEditorButtons.current
-            )}
-        </ThemeProvider>
+        {getThemeAndHeader()}
         <Flex
           id="containerFullScreen"
           border="1px solid grey"
@@ -175,44 +231,9 @@ const getComponentList = () => {
           margin="auto"
           minWidth="1000px"
         >
-          <Flex
-            ref={componentListRef}
-            role="componentList"
-            overflow="scroll"
-            backgroundColor="#fff"
-            width={openComponentList ? '6%' : 0}
-          />
-          <Flex
-            role="codeEditor"
-            backgroundColor="#222"
-            width="40%"
-            flexDirection='column'
-            position="relative"
-            ref={codeEditorRef}
-          >
-            <Flex id="editorWrapper" flexGrow={1} overflowY="scroll">
-              <Box minWidth='100%'>
-                <Editor className='editor_internal' {...params.editorProps} language="jsx" />
-              </Box>
-            </Flex>
-          </Flex>
-          <Flex
-            backgroundColor="#aaa"
-            flexGrow={1}
-            width="50%"
-            role="codeDisplay"
-          >
-            <Box
-              overflow="scroll"
-              width="100%"
-              height="100%"
-              id="_codeDisplay"
-              ref={codeDisplayRef}
-            >
-              <Compiler {...params.compilerProps} presets={[presetTypescript]} />
-              <Error {...params.errorProps} />
-            </Box>
-          </Flex>
+          {getComponentListWrapper()}
+          {getCodeEditor()}
+          {getCompiledCode()}
         </Flex>
         <Flex ref={codeEditorButtons} minHeight={0} id="editorWrapper_buttons" width='100%'>
           <ActionButtons {...params.actions} />

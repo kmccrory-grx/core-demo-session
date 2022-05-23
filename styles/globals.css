@@ -20,3 +20,36 @@ a {
 * {
   box-sizing: border-box;
 }
+
+#__next,
+html,
+body {
+  height: 100%;
+}
+
+#containerFullScreen {
+  overflow: hidden;
+}
+
+#editorWrapper {
+  display: flex;
+}
+
+#editorWrapper textarea, #editorWrapper pre {
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.editor_internal {
+  display: flex;
+  min-height: 100%
+}
+
+.editor_internal div:first-of-type {
+  display: flex;
+  width: 100%;
+}
+
+.compiler_internal {
+  width: 100%;
+}
