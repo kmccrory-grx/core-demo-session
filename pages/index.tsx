@@ -24,7 +24,7 @@ import {
 } from '@goodrx/matisse-react';
 import * as allMattisseComponents from '@goodrx/matisse-react';
 import * as allEinsteinComponents from '@goodrx/einstein';
-import ComponentList from './components/ComponentList.tsx';
+// import ComponentList from './components/ComponentList';
 
 // helper imports
 import * as yup from 'yup';
@@ -32,12 +32,14 @@ import axios from 'axios';
 
 // demo/initial cold text
 import DemoText from '../data/demoCodeBlock.js';
+import componentData from '../data/componentData';
 
 import { useView, Compiler, Editor, Error, formatCode, ActionButtons } from 'react-view';
 import presetTypescript from '@babel/preset-typescript';
 
-import componentData from '../data/componentData';
 import { useFormikContext } from 'formik';
+import { useAuth } from "./api/auth/authContextProvider";
+
 
 const scopeComponents = {
   ...allMattisseComponents,
@@ -61,6 +63,32 @@ const Home = () => {
   const componentListRef = useRef(null);
   const codeEditorRef = useRef(null);
   const codeEditorButtons = useRef(null);
+  const { user, login, logout } = useAuth();
+  
+
+  const signInButtons = () => {
+    // if (!session) {
+    //   return (
+    //     <>
+    //       Signed in as {session?.user?.email} <br />
+    //       <button onClick={() => signOut()}>Sign out</button>
+    //     </>
+    //   )
+    // }
+    // return (
+    //   <>
+    //     Not signed in <br />
+    //     <button onClick={() => signIn()}>Sign in</button>
+    //   </>
+    // )
+    return (
+      <>
+        <button onClick={() => login()}>Sign in</button>
+        <button onClick={() => logout()}>Sign out</button>
+      </>
+    )
+  }
+
 
   const paramsInitial = useView({
     initialCode: editorCode,
@@ -162,6 +190,59 @@ const Home = () => {
     )
   };
 
+  const pasteSnippet = (key) => {
+    const textArea = document
+      .getElementById('editorWrapper')
+      .getElementsByTagName('textarea')[0];
+
+    textArea.setSelectionRange(cursorPosition, cursorPosition);
+
+    let code = textArea.value.slice(0, cursorPosition) +
+      `${componentData[key].snippet}` +
+      textArea.value.slice(cursorPosition);
+
+    if (componentData[key].hooks) {
+      code = code.slice(0, 7) +
+        `\n${componentData[key].hooks}` +
+        code.slice(7);
+    };
+
+    if (componentData[key].definitions) {
+      code = code.slice(0, 7) +
+        `\n${componentData[key].definitions}` +
+        code.slice(7);
+    };
+
+    setEditorCode(formatCode(code));
+    setEditorKey(Math.random() * 100);
+  }
+
+  let formattedCodeListData = () => Object.keys(componentData).map((key) => {
+    return {
+      title: (
+        <Button
+          onClick={(e) => {
+            e.preventDefault();
+            pasteSnippet(key);
+          }}
+          type="button"
+          size='sm'
+          variant='standalone'
+        >
+          {key}
+        </Button>
+      ),
+    };
+  });
+
+  const ComponentList:any = () => {
+    return (
+      <>
+        <List blocks={formattedCodeListData()} variant="none" />
+      </>
+    );
+  };
+
   const getThemeAndHeader = () => {
     return (
       <ThemeProvider theme="matisse">
@@ -197,7 +278,8 @@ const Home = () => {
         ref={codeEditorRef}
       >
         <Flex id="editorWrapper" flexGrow={1} overflowY="scroll">
-          <Box onBlur={() => editorBlur()} minWidth='100%'>
+          {/* <Box onBlur={() => editorBlur()} minWidth='100%'>*/}
+          <Box minWidth='100%'> 
             <Editor {...params.editorProps} key={editorKey} language="tsx" />
           </Box>
         </Flex>
@@ -237,6 +319,7 @@ const Home = () => {
         </Flex>
         <Flex ref={codeEditorButtons} minHeight={0} id="editorWrapper_buttons" width='100%'>
           <ActionButtons {...params.actions} />
+          {signInButtons()}
         </Flex>
       </Flex>
     </>

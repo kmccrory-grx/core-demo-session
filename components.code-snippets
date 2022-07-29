@@ -1,0 +1,33 @@
+{
+ "Button": {
+  "Button import": {
+   "scope": "javascript,javascriptreact,typescript,typescriptreact",
+   "prefix": [
+    "Button component import"
+   ],
+   "description": "Base Button import.",
+   "body": [
+    "import ${1:{${2:Button}\\}} from '@goodrx/matisse-react';"
+   ]
+  },
+  "Button": {
+   "scope": "javascript,javascriptreact,typescript,typescriptreact",
+   "prefix": [
+    "Button component component"
+   ],
+   "description": "Base Button component.",
+   "body": [
+    "<Button",
+    "  ${1:className=\"${2:}\"}",
+    "  ${3:disabled}",
+    "  ${4:hasChildren}",
+    "  ${5:leadingIcon=\"${6:info}\"}",
+    "  ${7:loading={${8:false}\\}}",
+    "  ${9:onClick={${10:() => { }}\\}}",
+    ">",
+    "  ${11:I am a Button}",
+    "</Button>"
+   ]
+  }
+ }
+}
